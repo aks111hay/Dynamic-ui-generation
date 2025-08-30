@@ -1,1 +1,312 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>LLM UI Chat</title>
+  <style>
+    body { 
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; 
+      margin: 0; 
+      background: #f0f0f0; 
+      overflow: hidden;
+      -webkit-user-select: none;
+      -moz-user-select: none;
+      -ms-user-select: none;
+      user-select: none;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+    }
+    
+    #chatbox { 
+      position: relative; 
+      height: 100vh; 
+      height: 100svh; /* Better mobile viewport height */
+      width: 100%;
+      max-width: 490px; /* iPhone 14 Pro width */
+      display: flex; 
+      flex-direction: column; 
+      background: #fff;
+      box-shadow: 0 0 30px rgba(0, 0, 0, 0.1);
+      border-radius: 0;
+    }
+    
+    /* On larger screens, add mobile-like container styling */
+    @media screen and (min-width: 450px) {
+      body {
+        padding: 20px;
+      }
+      
+      #chatbox {
+        height: calc(100vh - 40px);
+        height: calc(100svh - 40px);
+        border-radius: 12px;
+        box-shadow: 0 10px 40px rgba(0, 0, 0, 0.15);
+      }
+    }
+    
+    #messages { 
+      flex: 1; 
+      padding: 10px 12px; 
+      overflow-y: auto; 
+      display: flex; 
+      flex-direction: column; 
+      gap: 8px;
+      -webkit-overflow-scrolling: touch; /* Smooth scrolling on iOS */
+    }
+    
+    .message { 
+      max-width: 85%; 
+      padding: 10px 14px; 
+      border-radius: 16px; 
+      font-size: 16px; /* Slightly larger for mobile readability */
+      line-height: 1.4; 
+      word-wrap: break-word; 
+      -webkit-user-select: text;
+      -moz-user-select: text;
+      -ms-user-select: text;
+      user-select: text;
+    }
+    
+    .user { 
+      align-self: flex-end; 
+      background: #007AFF; /* iOS blue */
+      color: #fff; 
+      border-bottom-right-radius: 4px; 
+    }
+    
+    .bot { 
+      align-self: flex-start; 
+      background: #E5E5EA; /* iOS message gray */
+      color: #000; 
+      border-bottom-left-radius: 4px; 
+    }
+    
+    .ui-block { 
+      background: #F2F2F7; 
+      padding: 8px 12px; 
+      border-radius: 10px; 
+      margin-top: 4px; 
+      font-size: 14px; 
+      border: 1px solid #E5E5EA;
+    }
 
+    .composer { 
+      padding: 8px 12px; 
+      padding-bottom: calc(8px + env(safe-area-inset-bottom)); /* Handle iPhone home indicator */
+      border-top: 1px solid #E5E5EA; 
+      background: #F2F2F7; 
+      display: flex; 
+      align-items: center; 
+      gap: 8px; 
+    }
+    
+    #input { 
+      flex: 1; 
+      padding: 12px 16px; 
+      border-radius: 20px; 
+      border: 1px solid #E5E5EA; 
+      font-size: 16px; /* Prevent zoom on iOS */
+      outline: none; 
+      background: #fff;
+      -webkit-appearance: none;
+      appearance: none;
+    }
+    
+    #input:focus {
+      border-color: #007AFF;
+      box-shadow: 0 0 0 2px rgba(0, 122, 255, 0.1);
+    }
+    
+    #send { 
+      width: 36px; 
+      height: 36px; 
+      border-radius: 50%; 
+      border: none; 
+      background: #007AFF; 
+      cursor: pointer; 
+      display: flex; 
+      align-items: center; 
+      justify-content: center; 
+      font-size: 18px;
+      color: white;
+      transition: background-color 0.2s ease;
+      -webkit-tap-highlight-color: transparent;
+    }
+    
+    #send:hover, #send:active { 
+      background: #0056b3; 
+    }
+    
+    #send:disabled {
+      background: #C7C7CC;
+      cursor: not-allowed;
+    }
+    
+    /* Handle landscape orientation on mobile */
+    @media screen and (orientation: landscape) and (max-height: 500px) {
+      #messages {
+        padding: 8px 12px;
+        gap: 6px;
+      }
+      
+      .composer {
+        padding: 6px 12px;
+        padding-bottom: calc(6px + env(safe-area-inset-bottom));
+      }
+      
+      #input {
+        padding: 10px 16px;
+      }
+      
+      #send {
+        width: 32px;
+        height: 32px;
+        font-size: 16px;
+      }
+    }
+    
+    /* Dark mode support */
+    @media (prefers-color-scheme: dark) {
+      body {
+        background: #1a1a1a;
+        color: #fff;
+      }
+      
+      #chatbox {
+        background: #000;
+      }
+      
+      .bot {
+        background: #3C3C43;
+        color: #fff;
+      }
+      
+      .ui-block {
+        background: #2C2C2E;
+        border-color: #3C3C43;
+        color: #fff;
+      }
+      
+      .composer {
+        background: #1C1C1E;
+        border-top-color: #3C3C43;
+      }
+      
+      #input {
+        background: #2C2C2E;
+        border-color: #3C3C43;
+        color: #fff;
+      }
+      
+      #input:focus {
+        border-color: #007AFF;
+        box-shadow: 0 0 0 2px rgba(0, 122, 255, 0.3);
+      }
+    }
+    
+    /* Accessibility improvements */
+    @media (prefers-reduced-motion: reduce) {
+      #send {
+        transition: none;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div id="chatbox">
+    <div id="messages"></div>
+    <div class="composer">
+      <input type="text" id="input" placeholder="Ask Anything..." autocomplete="off" autocorrect="off" autocapitalize="sentences">
+      <button id="send" aria-label="Send message">⬆️</button>
+    </div>
+  </div>
+
+  <script>
+    const input = document.getElementById('input');
+    const sendBtn = document.getElementById('send');
+    const messages = document.getElementById('messages');
+
+    // Prevent zoom on double tap
+    let lastTouchEnd = 0;
+    document.addEventListener('touchend', function (event) {
+      const now = (new Date()).getTime();
+      if (now - lastTouchEnd <= 300) {
+        event.preventDefault();
+      }
+      lastTouchEnd = now;
+    }, false);
+
+    // Handle send button click/tap
+    sendBtn.onclick = async () => {
+      const userInput = input.value.trim();
+      if (!userInput) return;
+      
+      // Disable send button to prevent double sends
+      sendBtn.disabled = true;
+      
+      appendMessage('user', userInput);
+      input.value = '';
+      
+      try {
+        const res = await fetch('/generate', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ message: userInput })
+        });
+        const html = await res.text();
+        appendHtml(html);
+      } catch (error) {
+        appendMessage('bot', 'Sorry, there was an error processing your request.');
+      } finally {
+        sendBtn.disabled = false;
+      }
+    };
+
+    // Handle Enter key press
+    input.addEventListener('keypress', (e) => {
+      if (e.key === 'Enter' && !e.shiftKey) {
+        e.preventDefault();
+        sendBtn.onclick();
+      }
+    });
+
+    // Auto-resize input on focus for better mobile experience
+    input.addEventListener('focus', () => {
+      // Small delay to ensure keyboard is shown
+      setTimeout(() => {
+        input.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      }, 300);
+    });
+
+    function appendMessage(sender, text) {
+      const msg = document.createElement('div');
+      msg.className = 'message ' + sender;
+      msg.textContent = text;
+      messages.appendChild(msg);
+      scrollToBottom();
+    }
+
+    function appendHtml(html) {
+      const wrapper = document.createElement('div');
+      wrapper.className = 'message bot';
+      wrapper.innerHTML = html;
+      messages.appendChild(wrapper);
+      scrollToBottom();
+    }
+
+    function scrollToBottom() {
+      // Use requestAnimationFrame for smoother scrolling
+      requestAnimationFrame(() => {
+        messages.scrollTop = messages.scrollHeight;
+      });
+    }
+
+    // Handle window resize (keyboard show/hide on mobile)
+    window.addEventListener('resize', () => {
+      scrollToBottom();
+    });
+  </script>
+</body>
+</html>
